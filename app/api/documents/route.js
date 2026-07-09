@@ -12,6 +12,7 @@ import {
   normalizeCode,
   publicDocument,
   putJson,
+  getBlobToken,
   requireAdmin,
   requireBlobToken,
 } from "../../../lib/documents";
@@ -95,12 +96,13 @@ async function saveDocument(request, isUpdate) {
       const pdfBlob = await put(targetPathname, file, {
         access: "public",
         contentType: "application/pdf",
+        token: getBlobToken(),
       });
       pdfUrl = pdfBlob.url;
       pdfPathname = pdfBlob.pathname;
 
       if (existing?.pdfPathname) {
-        await del(existing.pdfPathname);
+        await del(existing.pdfPathname, { token: getBlobToken() });
       }
     }
 
