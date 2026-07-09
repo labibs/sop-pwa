@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#18333a">
+    <title>Manual SAKTE</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Manual SAKTE">
+        <span class="brand-mark">S</span>
+        <span>
+          <strong>Manual SAKTE</strong>
+          <small>Dokumen SOP offline-ready</small>
+        </span>
+      </a>
+      <nav class="top-actions" aria-label="Navigasi">
+        <a href="/admin" id="adminLink">Admin</a>
+        <div class="status" id="networkStatus" data-state="checking">Memeriksa koneksi</div>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="lookup" id="lookupView">
+        <div class="lookup-copy">
+          <p class="eyebrow">PWA pembaca QR</p>
+          <h1>Buka SOP dari URL QR dan simpan untuk akses offline.</h1>
+          <p class="lead">Gunakan URL seperti <code>https://manual.sakte.id/BOR-001</code>. Saat online PDF dibuka langsung. Setelah tersimpan di cache, dokumen yang sama dapat dibuka otomatis ketika offline.</p>
+        </div>
+
+        <form class="search" id="documentForm">
+          <label for="documentCode">Kode dokumen</label>
+          <div class="search-row">
+            <input id="documentCode" name="documentCode" type="text" autocomplete="off" inputmode="latin" placeholder="BOR-001">
+            <button type="submit">Buka</button>
+          </div>
+        </form>
+
+        <div class="recent" id="recentDocuments" hidden>
+          <h2>Dokumen tersimpan</h2>
+          <div class="recent-list" id="recentList"></div>
+        </div>
+      </section>
+
+      <section class="viewer" id="viewerView" hidden>
+        <div class="viewer-toolbar">
+          <div>
+            <p class="eyebrow">Dokumen</p>
+            <h1 id="documentTitle">Memuat dokumen</h1>
+          </div>
+          <div class="viewer-actions">
+            <a class="ghost-button" href="/" id="homeLink">Daftar</a>
+            <a class="primary-button" href="#" id="openPdfLink" target="_blank" rel="noreferrer">Buka PDF</a>
+          </div>
+        </div>
+
+        <div class="notice" id="notice" hidden></div>
+        <div class="pdf-frame" id="pdfFrame">
+          <div class="loader" id="loader">Menyiapkan PDF</div>
+        </div>
+      </section>
+
+      <section class="admin" id="adminView" hidden>
+        <div class="admin-heading">
+          <p class="eyebrow">Admin dokumen</p>
+          <h1>Kelola dokumen PDF dan link QR.</h1>
+        </div>
+
+        <form class="admin-login" id="adminLoginForm">
+          <label for="adminLoginPassword">Password admin</label>
+          <div class="search-row">
+            <input id="adminLoginPassword" name="adminLoginPassword" type="password" autocomplete="current-password" required>
+            <button type="submit">Login</button>
+          </div>
+          <div class="notice" id="adminLoginNotice" hidden></div>
+        </form>
+
+        <div class="admin-dashboard" id="adminDashboard" hidden>
+          <div class="admin-toolbar">
+            <div>
+              <h2>Daftar PDF</h2>
+              <p>Upload, edit, hapus, dan salin link dokumen.</p>
+            </div>
+            <div class="viewer-actions">
+              <button type="button" class="ghost-button" id="newDocument">Tambah PDF</button>
+              <button type="button" class="ghost-button" id="adminLogout">Logout</button>
+            </div>
+          </div>
+
+          <form class="admin-form" id="adminForm" hidden>
+            <input id="adminPassword" name="adminPassword" type="hidden">
+
+            <label for="pdfTitle">Judul dokumen</label>
+            <input id="pdfTitle" name="pdfTitle" type="text" autocomplete="off" placeholder="Boarding Manual BOR 001" required>
+
+            <label for="pdfCode">Kode link</label>
+            <input id="pdfCode" name="pdfCode" type="text" autocomplete="off" placeholder="BOR-001">
+
+            <label for="pdfPassword">Password dokumen</label>
+            <div class="search-row">
+              <input id="pdfPassword" name="pdfPassword" type="text" autocomplete="off" placeholder="Otomatis jika kosong">
+              <button type="button" id="generatePassword">Generate</button>
+            </div>
+
+            <label for="pdfFile">File PDF</label>
+            <input id="pdfFile" name="pdfFile" type="file" accept="application/pdf">
+
+            <div class="viewer-actions">
+              <button type="submit" id="saveDocument">Simpan</button>
+              <button type="button" class="ghost-button" id="cancelEdit">Batal</button>
+            </div>
+            <input id="editingCode" type="hidden">
+          </form>
+          <div class="notice" id="adminNotice" hidden></div>
+
+          <div class="admin-panel">
+            <div class="generated" id="generatedResult" hidden>
+              <h2>Link siap dipakai</h2>
+              <label for="generatedLink">Link</label>
+              <input id="generatedLink" type="text" readonly>
+              <label for="generatedPassword">Password</label>
+              <input id="generatedPassword" type="text" readonly>
+              <button type="button" id="copyGenerated">Salin</button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Judul</th>
+                    <th>Kode</th>
+                    <th>Dibuat</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+              </table>
+              <div class="empty-state" id="adminEmptyState" hidden>Belum ada PDF yang diupload.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="password-dialog" id="passwordDialog">
+      <form id="passwordForm" method="dialog">
+        <h2>Password dokumen</h2>
+        <p>Masukkan password untuk membuka PDF ini.</p>
+        <input id="documentPassword" type="password" autocomplete="current-password" required>
+        <p class="form-error" id="passwordMessage"></p>
+        <button type="submit">Buka Dokumen</button>
+      </form>
+    </dialog>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

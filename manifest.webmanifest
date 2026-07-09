@@ -1,0 +1,18 @@
+{
+  "name": "Manual SAKTE",
+  "short_name": "Manual",
+  "description": "Pembaca PDF SOP dari QR dengan cache offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#18333a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

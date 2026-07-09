@@ -1,0 +1,13 @@
+{
+  "name": "manual-sakte-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "check": "node --check app.js && node --check sw.js && node --check server.mjs && node --check api/documents.js && node --check api/document.js && node --check api/pdf.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1"
+  }
+}

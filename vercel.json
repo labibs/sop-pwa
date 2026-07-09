@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api/|pdf/|icons/|styles.css|app.js|sw.js|manifest.webmanifest).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
