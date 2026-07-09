@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import crypto from "node:crypto";
 
 const root = process.cwd();
+const staticRoot = join(root, "public");
 const port = Number(process.env.PORT || 8080);
 const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 const dataRoot = join(root, ".local-data");
@@ -101,7 +102,7 @@ function absoluteUrl(request, path) {
 
 function filePathFor(urlPath) {
   const cleanPath = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[/\\])+/, "");
-  const requestedPath = join(root, cleanPath);
+  const requestedPath = join(staticRoot, cleanPath);
 
   if (existsSync(requestedPath) && statSync(requestedPath).isFile()) {
     return requestedPath;
@@ -118,7 +119,7 @@ function filePathFor(urlPath) {
     return null;
   }
 
-  return join(root, "index.html");
+  return join(staticRoot, "index.html");
 }
 
 async function toWebRequest(request) {
