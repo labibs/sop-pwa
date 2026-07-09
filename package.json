@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node local/server.mjs",
-    "check": "node --check public/client.js && node --check public/sw.js && node --check local/server.mjs && node --check api/_node.js && node --check api/health.js && node --check api/documents.js && node --check api/document.js && node --check api/pdf.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "node --check public/client.js && node --check public/sw.js && next build"
   },
   "dependencies": {
-    "@vercel/blob": "^2.6.1"
+    "@vercel/blob": "^2.6.1",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

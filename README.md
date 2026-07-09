@@ -1,6 +1,6 @@
 # Manual SAKTE PWA
 
-PWA untuk membuka PDF SOP dari QR URL seperti:
+Next.js PWA untuk membuka PDF SOP dari QR URL seperti:
 
 ```text
 https://manual.sakte.id/BOR-001?p=PASSWORD
@@ -8,51 +8,36 @@ https://manual.sakte.id/BOR-001?p=PASSWORD
 
 Alur aplikasi:
 
-1. Admin upload PDF dari halaman `/admin`.
-2. Admin mengisi judul, kode dokumen, dan password dokumen.
-3. PDF disimpan ke Vercel Blob.
+1. Admin login di `/admin`.
+2. Admin upload PDF, judul, kode dokumen, dan password dokumen.
+3. PDF dan metadata disimpan ke Vercel Blob.
 4. Aplikasi menghasilkan link dokumen berdasarkan domain deployment.
 5. User membuka link, password divalidasi lewat API, lalu PDF ditampilkan.
 6. Setelah PDF pernah berhasil dibuka online, dokumen yang sama bisa dibuka offline dari cache PWA.
 
-## Halaman Admin
+## Environment Variables
 
-Setelah deploy, buka:
-
-```text
-https://domain-vercel-anda.vercel.app/admin
-```
-
-Isi:
-
-- Password admin
-- Setelah login, dashboard menampilkan tabel PDF yang sudah diupload.
-- Klik `Tambah PDF` untuk upload dokumen baru.
-- Klik `Edit` untuk mengganti judul, password dokumen, atau file PDF.
-- Klik `Hapus` untuk menghapus metadata dan file PDF dari Vercel Blob.
-- Klik `Salin` untuk menyalin link dokumen.
-
-Hasilnya berupa:
-
-```text
-Link: https://domain-vercel-anda.vercel.app/BOR-001?p=PASSWORD
-Password: PASSWORD
-```
-
-Link ini bisa dijadikan QR.
-
-## Environment Variables Vercel
-
-Tambahkan environment variables berikut di Vercel Project Settings:
+Tambahkan di Vercel Project Settings:
 
 ```text
 ADMIN_PASSWORD=isi-password-admin-anda
 BLOB_READ_WRITE_TOKEN=token-dari-vercel-blob
 ```
 
-`ADMIN_PASSWORD` dipakai untuk melindungi halaman upload. `BLOB_READ_WRITE_TOKEN` dipakai API untuk menyimpan PDF dan metadata ke Vercel Blob.
+`BLOB_READ_WRITE_TOKEN` bisa dibuat dengan connect Vercel Blob ke project dari tab Storage.
 
 ## Deploy ke Vercel
+
+Project ini sekarang memakai Next.js. Di Vercel:
+
+- Framework Preset: `Next.js`
+- Build Command: default, atau `npm run build`
+- Install Command: default, atau `npm install`
+- Root Directory: folder yang berisi `package.json`, `app/`, dan `public/`
+
+Tidak perlu `vercel.json`, custom server, atau output directory khusus.
+
+## Uji Lokal
 
 Install dependency:
 
@@ -60,11 +45,7 @@ Install dependency:
 npm install
 ```
 
-Deploy folder ini ke Vercel. File `vercel.json` sudah menyiapkan rewrite agar URL seperti `/BOR-001` tetap masuk ke PWA, sedangkan `/api/*` tetap masuk ke serverless API.
-
-## Uji Lokal
-
-Untuk tes lokal penuh tanpa Vercel Blob:
+Jalankan:
 
 ```bash
 npm run dev
@@ -73,36 +54,25 @@ npm run dev
 Buka:
 
 ```text
-http://localhost:8080
+http://localhost:3000
+http://localhost:3000/admin
 ```
 
-Halaman admin lokal:
-
-```text
-http://localhost:8080/admin
-```
-
-Password admin lokal default:
-
-```text
-admin123
-```
-
-Kalau ingin mengganti password lokal:
+Untuk upload PDF lokal, jalankan dengan env yang sama:
 
 ```bash
-ADMIN_PASSWORD=password-anda npm run dev
+ADMIN_PASSWORD=admin123 BLOB_READ_WRITE_TOKEN=token-blob npm run dev
 ```
 
-Data upload lokal disimpan di folder `.local-data/` dan tidak ikut deploy. Dev server lokal ada di folder `local/` dan juga tidak ikut deploy ke Vercel.
+Atau pakai `vercel dev` setelah environment variables tersambung ke project Vercel.
 
-Untuk menguji upload admin dan API Vercel Blob secara lokal, gunakan Vercel CLI dengan environment variables yang sama:
+## Admin
 
-```bash
-vercel dev
-```
+Setelah login di `/admin`, dashboard menampilkan tabel PDF:
 
-## Catatan Keamanan
+- `Tambah PDF` untuk upload dokumen baru.
+- `Edit` untuk mengganti judul, password, atau file PDF.
+- `Hapus` untuk menghapus metadata dan file PDF dari Vercel Blob.
+- `Salin` untuk menyalin link dokumen.
 
-PDF disimpan di Vercel Blob dengan URL acak dan tidak ditampilkan sebelum password benar. Perlindungan utama ada di API aplikasi. Jangan membagikan URL Blob langsung.
-# sop-pwa
+Password dokumen disimpan sebagai hash, jadi tidak ditampilkan ulang. Kalau lupa, edit dokumen dan isi password baru.

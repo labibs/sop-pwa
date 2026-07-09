@@ -1,23 +1,15 @@
-import { sendWebResponse, toWebRequest } from "./_node.js";
-import { getDocument, json, verifyPassword } from "./_shared.js";
+import { getDocument, json, verifyPassword } from "../../../lib/documents";
 
-export default async function handler(req, res) {
-  const response = await handlePdf(toWebRequest(req));
-  await sendWebResponse(res, response);
-}
+export const runtime = "nodejs";
 
-async function handlePdf(request) {
+export async function GET(request) {
   try {
     const url = new URL(request.url);
-    const code = url.searchParams.get("code") || "";
-    const password = url.searchParams.get("password") || "";
-    const doc = await getDocument(code);
-
+    const doc = await getDocument(url.searchParams.get("code") || "");
     if (!doc) {
       return json({ message: "Dokumen tidak ditemukan." }, 404);
     }
-
-    if (!(await verifyPassword(password, doc.passwordHash))) {
+    if (!verifyPassword(url.searchParams.get("password") || "", doc.passwordHash)) {
       return json({ message: "Password dokumen salah." }, 401);
     }
 

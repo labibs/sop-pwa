@@ -3,8 +3,6 @@ const PDF_CACHE = "manual-sakte-pdf-v2";
 
 const APP_ASSETS = [
   "/",
-  "/index.html",
-  "/styles.css",
   "/client.js",
   "/manifest.webmanifest",
   "/icons/icon.svg",
