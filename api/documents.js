@@ -1,4 +1,5 @@
 import { del, list, put } from "@vercel/blob";
+import { sendWebResponse, toWebRequest } from "./_node.js";
 import {
   DOCUMENT_PREFIX,
   PDF_PREFIX,
@@ -11,11 +12,12 @@ import {
   requireAdmin,
 } from "./_shared.js";
 
-export const config = {
-  runtime: "edge",
-};
+export default async function handler(req, res) {
+  const response = await handleDocuments(toWebRequest(req));
+  await sendWebResponse(res, response);
+}
 
-export default async function handler(request) {
+async function handleDocuments(request) {
   try {
     if (request.method === "GET") {
       const url = new URL(request.url);

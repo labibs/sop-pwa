@@ -1,10 +1,12 @@
+import { sendWebResponse, toWebRequest } from "./_node.js";
 import { getDocument, json, verifyPassword } from "./_shared.js";
 
-export const config = {
-  runtime: "edge",
-};
+export default async function handler(req, res) {
+  const response = await handlePdf(toWebRequest(req));
+  await sendWebResponse(res, response);
+}
 
-export default async function handler(request) {
+async function handlePdf(request) {
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code") || "";

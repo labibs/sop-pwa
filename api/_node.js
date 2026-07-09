@@ -1,0 +1,39 @@
+import { Readable } from "node:stream";
+
+export function toWebRequest(req) {
+  const protocol = req.headers["x-forwarded-proto"] || "https";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const url = new URL(req.url || "/", `${protocol}://${host}`);
+  const headers = new Headers();
+
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        headers.append(key, item);
+      }
+    } else if (value !== undefined) {
+      headers.set(key, value);
+    }
+  }
+
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method || "") ? undefined : Readable.toWeb(req),
+    duplex: "half",
+  });
+}
+
+export async function sendWebResponse(res, response) {
+  res.statusCode = response.status;
+  for (const [key, value] of response.headers.entries()) {
+    res.setHeader(key, value);
+  }
+
+  if (!response.body) {
+    res.end();
+    return;
+  }
+
+  Readable.fromWeb(response.body).pipe(res);
+}

@@ -1,10 +1,12 @@
+import { sendWebResponse, toWebRequest } from "./_node.js";
 import { getDocument, json, publicDocument, verifyPassword } from "./_shared.js";
 
-export const config = {
-  runtime: "edge",
-};
+export default async function handler(req, res) {
+  const response = await handleDocument(toWebRequest(req));
+  await sendWebResponse(res, response);
+}
 
-export default async function handler(request) {
+async function handleDocument(request) {
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code") || "";
