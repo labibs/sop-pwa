@@ -35,6 +35,7 @@ async function handlePdf(request) {
       },
     });
   } catch (error) {
+    console.error(error);
     return json({ message: error.message || "Terjadi kesalahan." }, error.status || 500);
   }
 }

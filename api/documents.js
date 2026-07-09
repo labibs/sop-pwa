@@ -10,6 +10,7 @@ import {
   publicDocument,
   putJson,
   requireAdmin,
+  requireBlobToken,
 } from "./_shared.js";
 
 export default async function handler(req, res) {
@@ -22,6 +23,7 @@ async function handleDocuments(request) {
     if (request.method === "GET") {
       const url = new URL(request.url);
       requireAdmin(url.searchParams.get("adminPassword") || "");
+      requireBlobToken();
       const result = await list({ prefix: DOCUMENT_PREFIX, limit: 1000 });
       const documents = await Promise.all(
         result.blobs.map(async (blob) => {
@@ -35,6 +37,7 @@ async function handleDocuments(request) {
     if (request.method === "DELETE") {
       const url = new URL(request.url);
       requireAdmin(url.searchParams.get("adminPassword") || "");
+      requireBlobToken();
       const code = normalizeCode(url.searchParams.get("code") || "");
       if (!code) {
         return json({ message: "Kode dokumen wajib diisi." }, 400);
@@ -55,6 +58,7 @@ async function handleDocuments(request) {
 
     const formData = await request.formData();
     requireAdmin(formData.get("adminPassword"));
+    requireBlobToken();
 
     const isUpdate = request.method === "PUT";
     const code = normalizeCode(formData.get("code") || formData.get("title"));
@@ -123,11 +127,13 @@ async function handleDocuments(request) {
       password: documentPassword,
     }, isUpdate ? 200 : 201);
   } catch (error) {
+    console.error(error);
     return json({ message: error.message || "Terjadi kesalahan." }, error.status || 500);
   }
 }
 
 async function readDocumentForAdmin(code) {
+  requireBlobToken();
   const pathname = `${DOCUMENT_PREFIX}${normalizeCode(code)}.json`;
   const result = await list({ prefix: pathname, limit: 1 });
   const blob = result.blobs.find((item) => item.pathname === pathname);

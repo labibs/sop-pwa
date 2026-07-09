@@ -58,7 +58,17 @@ export function requireAdmin(password) {
   }
 }
 
+export function requireBlobToken() {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw Object.assign(
+      new Error("BLOB_READ_WRITE_TOKEN belum diset. Connect Vercel Blob ke project, lalu redeploy."),
+      { status: 500 },
+    );
+  }
+}
+
 export async function putJson(pathname, value) {
+  requireBlobToken();
   return put(pathname, JSON.stringify(value, null, 2), {
     access: "public",
     addRandomSuffix: false,
@@ -67,6 +77,7 @@ export async function putJson(pathname, value) {
 }
 
 export async function getDocument(code) {
+  requireBlobToken();
   const pathname = `${DOCUMENT_PREFIX}${normalizeCode(code)}.json`;
   const result = await list({ prefix: pathname, limit: 1 });
   const blob = result.blobs.find((item) => item.pathname === pathname);

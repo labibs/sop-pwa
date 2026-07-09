@@ -1,8 +1,19 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!api/|pdf/|icons/|styles.css|app.js|sw.js|manifest.webmanifest).*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/icons/icon.svg"
+    },
+    {
+      "src": "/admin",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/[^/.]+",
+      "dest": "/index.html"
     }
   ]
 }

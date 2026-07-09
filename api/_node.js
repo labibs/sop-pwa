@@ -5,6 +5,7 @@ export function toWebRequest(req) {
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   const url = new URL(req.url || "/", `${protocol}://${host}`);
   const headers = new Headers();
+  const hasBody = !["GET", "HEAD"].includes(req.method || "");
 
   for (const [key, value] of Object.entries(req.headers)) {
     if (Array.isArray(value)) {
@@ -16,12 +17,17 @@ export function toWebRequest(req) {
     }
   }
 
-  return new Request(url, {
+  const init = {
     method: req.method,
     headers,
-    body: ["GET", "HEAD"].includes(req.method || "") ? undefined : Readable.toWeb(req),
-    duplex: "half",
-  });
+  };
+
+  if (hasBody) {
+    init.body = Readable.toWeb(req);
+    init.duplex = "half";
+  }
+
+  return new Request(url, init);
 }
 
 export async function sendWebResponse(res, response) {

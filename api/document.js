@@ -23,6 +23,7 @@ async function handleDocument(request) {
 
     return json(publicDocument(doc));
   } catch (error) {
+    console.error(error);
     return json({ message: error.message || "Terjadi kesalahan." }, error.status || 500);
   }
 }
