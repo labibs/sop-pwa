@@ -1,4 +1,4 @@
-import { getDocument, json, verifyPassword } from "../../../lib/documents";
+import { getDocument, getPrivateBlob, json, verifyPassword } from "../../../lib/documents";
 
 export const runtime = "nodejs";
 
@@ -13,12 +13,12 @@ export async function GET(request) {
       return json({ message: "Password dokumen salah." }, 401);
     }
 
-    const response = await fetch(doc.pdfUrl, { cache: "no-store" });
-    if (!response.ok) {
+    const result = await getPrivateBlob(doc.pdfPathname);
+    if (!result || result.statusCode !== 200 || !result.stream) {
       return json({ message: "PDF tidak dapat dibaca dari storage." }, 502);
     }
 
-    return new Response(response.body, {
+    return new Response(result.stream, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

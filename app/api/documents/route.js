@@ -94,7 +94,7 @@ async function saveDocument(request, isUpdate) {
       const safeFilename = String(file.name || `${code}.pdf`).replace(/[^a-zA-Z0-9._-]/g, "-");
       const targetPathname = `${PDF_PREFIX}${code}-${crypto.randomUUID()}-${safeFilename}`;
       const pdfBlob = await put(targetPathname, file, {
-        access: "public",
+        access: "private",
         contentType: "application/pdf",
         token: getBlobToken(),
       });
