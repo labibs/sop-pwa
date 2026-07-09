@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
-    "check": "node --check public/client.js && node --check public/sw.js && node --check server.mjs && node --check api/_node.js && node --check api/health.js && node --check api/documents.js && node --check api/document.js && node --check api/pdf.js"
+    "dev": "node local/server.mjs",
+    "check": "node --check public/client.js && node --check public/sw.js && node --check local/server.mjs && node --check api/_node.js && node --check api/health.js && node --check api/documents.js && node --check api/document.js && node --check api/pdf.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.6.1"

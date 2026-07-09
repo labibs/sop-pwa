@@ -94,7 +94,7 @@ Kalau ingin mengganti password lokal:
 ADMIN_PASSWORD=password-anda npm run dev
 ```
 
-Data upload lokal disimpan di folder `.local-data/` dan tidak ikut deploy.
+Data upload lokal disimpan di folder `.local-data/` dan tidak ikut deploy. Dev server lokal ada di folder `local/` dan juga tidak ikut deploy ke Vercel.
 
 Untuk menguji upload admin dan API Vercel Blob secara lokal, gunakan Vercel CLI dengan environment variables yang sama:
 
