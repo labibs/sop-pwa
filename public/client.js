@@ -1,4 +1,5 @@
-const PDF_CACHE = "manual-sakte-pdf-v2";
+const APP_CACHE = "manual-sakte-app-v3";
+const PDF_CACHE = "manual-sakte-pdf-v3";
 const RECENT_KEY = "manual-sakte-recent";
 const ADMIN_SESSION_KEY = "manual-sakte-admin-password";
 
@@ -125,11 +126,31 @@ function showAdminDashboard() {
 async function cachePdf(code, response) {
   const cache = await caches.open(PDF_CACHE);
   await cache.put(cacheKeyFor(code), response.clone());
+  await cacheDocumentShell(code);
 }
 
 async function getCachedPdf(code) {
   const cache = await caches.open(PDF_CACHE);
   return cache.match(cacheKeyFor(code));
+}
+
+async function cacheDocumentShell(code) {
+  const appCache = await caches.open(APP_CACHE);
+  const shellResponse = await caches.match("/") || await fetch("/", { cache: "no-store" });
+  await appCache.put("/", shellResponse.clone());
+  await appCache.put(`/${encodeURIComponent(code)}`, shellResponse.clone());
+}
+
+async function waitForServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.ready;
+  } catch {
+    // Cache API still works when SW readiness is delayed.
+  }
 }
 
 async function readPasswordFor(code) {
@@ -197,6 +218,7 @@ async function renderPdf(code) {
   pdfFrame.innerHTML = '<div class="loader">Menyiapkan PDF</div>';
 
   try {
+    await waitForServiceWorker();
     const password = await readPasswordFor(code);
     const metadata = navigator.onLine ? await getDocumentMetadata(code, password) : null;
     if (metadata?.title) {
@@ -215,7 +237,7 @@ async function renderPdf(code) {
     openPdfLink.href = objectUrl;
 
     if (source === "network") {
-      setNotice(notice, "PDF dibuka dari server dan sudah disimpan untuk akses offline.", "success");
+      setNotice(notice, "PDF dibuka dari server dan sudah siap untuk akses offline di browser ini.", "success");
     } else {
       setNotice(notice, "PDF dibuka dari cache offline.", "success");
     }
@@ -544,7 +566,9 @@ window.addEventListener("online", setStatus);
 window.addEventListener("offline", setStatus);
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+  navigator.serviceWorker.register("/sw.js").then((registration) => {
+    registration.update();
+  });
 }
 
 setStatus();
