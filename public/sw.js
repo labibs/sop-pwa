@@ -1,5 +1,5 @@
-const APP_CACHE = "manual-sakte-app-v2";
-const PDF_CACHE = "manual-sakte-pdf-v2";
+const APP_CACHE = "manual-sakte-app-v3";
+const PDF_CACHE = "manual-sakte-pdf-v3";
 
 const APP_ASSETS = [
   "/",
@@ -36,13 +36,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.mode === "navigate") {
-    event.respondWith(navigationResponse(request));
+  if (url.pathname.startsWith("/api/")) {
     return;
   }
 
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(request));
+  if (request.mode === "navigate") {
+    event.respondWith(navigationResponse(request));
     return;
   }
 
@@ -60,7 +59,7 @@ async function navigationResponse(request) {
   }
 
   const cache = await caches.open(APP_CACHE);
-  return cache.match("/index.html");
+  return cache.match("/");
 }
 
 async function assetResponse(request) {
