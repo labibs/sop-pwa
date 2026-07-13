@@ -426,13 +426,22 @@ function barcodeUrlForCode(code) {
   return `/api/barcode?${params.toString()}`;
 }
 
-function downloadFile(url) {
+async function downloadBarcode(url, filename) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok || !response.headers.get("content-type")?.includes("image/png")) {
+    const payload = await readJsonSafely(response);
+    throw new Error(payload?.message || "Barcode gagal dibuat.");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
-  link.download = "";
+  link.href = objectUrl;
+  link.download = filename;
   document.body.append(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function formatDate(value) {
@@ -600,11 +609,18 @@ copyGenerated.addEventListener("click", async () => {
   }, 1400);
 });
 
-downloadGeneratedBarcode.addEventListener("click", () => {
+downloadGeneratedBarcode.addEventListener("click", async () => {
   if (!generatedLink.value) {
     return;
   }
-  downloadFile(barcodeUrlForLink(generatedLink.value));
+  try {
+    downloadGeneratedBarcode.textContent = "Membuat...";
+    await downloadBarcode(barcodeUrlForLink(generatedLink.value), "manual-sakte-barcode.png");
+  } catch (error) {
+    setNotice(adminNotice, error.message || "Barcode gagal dibuat.", "error");
+  } finally {
+    downloadGeneratedBarcode.textContent = "Download Barcode";
+  }
 });
 
 adminTableBody.addEventListener("click", async (event) => {
@@ -624,7 +640,14 @@ adminTableBody.addEventListener("click", async (event) => {
   }
 
   if (action === "barcode") {
-    downloadFile(barcodeUrlForCode(code));
+    try {
+      button.textContent = "Membuat...";
+      await downloadBarcode(barcodeUrlForCode(code), `${code.toLowerCase()}-barcode.png`);
+    } catch (error) {
+      setNotice(adminNotice, error.message || "Barcode gagal dibuat.", "error");
+    } finally {
+      button.textContent = "Barcode";
+    }
     return;
   }
 
