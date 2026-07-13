@@ -355,8 +355,8 @@ async function renderAdminList() {
         <td>${formatDate(doc.createdAt)}</td>
         <td>
           <div class="table-actions">
-            <button type="button" data-action="copy" data-code="${escapeHtml(doc.code)}">Salin</button>
-            <button type="button" data-action="barcode" data-code="${escapeHtml(doc.code)}">Barcode</button>
+            <button type="button" data-action="copy" data-code="${escapeHtml(doc.code)}" data-url="${escapeHtml(doc.url)}">Salin</button>
+            <button type="button" data-action="barcode" data-code="${escapeHtml(doc.code)}" data-url="${escapeHtml(doc.url)}">Barcode</button>
             <button type="button" data-action="edit" data-code="${escapeHtml(doc.code)}" data-title="${escapeHtml(doc.title)}">Edit</button>
             <button type="button" data-action="delete" data-code="${escapeHtml(doc.code)}">Hapus</button>
           </div>
@@ -629,9 +629,9 @@ adminTableBody.addEventListener("click", async (event) => {
     return;
   }
 
-  const { action, code, title } = button.dataset;
+  const { action, code, title, url } = button.dataset;
   if (action === "copy") {
-    await navigator.clipboard.writeText(documentUrl(code));
+    await navigator.clipboard.writeText(url || documentUrl(code));
     button.textContent = "Tersalin";
     setTimeout(() => {
       button.textContent = "Salin";
@@ -642,7 +642,7 @@ adminTableBody.addEventListener("click", async (event) => {
   if (action === "barcode") {
     try {
       button.textContent = "Membuat...";
-      await downloadBarcode(barcodeUrlForCode(code), `${code.toLowerCase()}-barcode.png`);
+      await downloadBarcode(barcodeUrlForLink(url || documentUrl(code)), `${code.toLowerCase()}-barcode.png`);
     } catch (error) {
       setNotice(adminNotice, error.message || "Barcode gagal dibuat.", "error");
     } finally {

@@ -8,6 +8,7 @@ import {
   createPasswordHash,
   deleteDocument,
   getDocument,
+  adminDocument,
   json,
   listDocuments,
   normalizeCode,
@@ -27,7 +28,22 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
     requireAdmin(url.searchParams.get("adminPassword") || "");
-    return json(await listDocuments());
+    const documents = await Promise.all(
+      (await listDocuments()).map(async (doc) => {
+        if (doc.accessToken) {
+          return adminDocument(doc, request);
+        }
+
+        const updated = {
+          ...doc,
+          accessToken: createAccessToken(),
+          updatedAt: new Date().toISOString(),
+        };
+        await putJson(`${DOCUMENT_PREFIX}${updated.code}.json`, updated);
+        return adminDocument(updated, request);
+      }),
+    );
+    return json(documents);
   } catch (error) {
     console.error(error);
     return json({ message: error.message || "Terjadi kesalahan." }, error.status || 500);
