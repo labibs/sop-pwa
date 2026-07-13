@@ -1,4 +1,4 @@
-const APP_CACHE = "manual-sakte-app-v3";
+const APP_CACHE = "manual-sakte-app-v4";
 const PDF_CACHE = "manual-sakte-pdf-v3";
 const RECENT_KEY = "manual-sakte-recent";
 const ADMIN_SESSION_KEY = "manual-sakte-admin-password";
@@ -86,6 +86,12 @@ function setNotice(target, message, kind = "info") {
   target.textContent = message;
   target.dataset.kind = kind;
   target.hidden = !message;
+}
+
+function shouldOpenPdfNatively() {
+  const mobileUserAgent = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+  return mobileUserAgent || coarsePointer;
 }
 
 function showLookup() {
@@ -223,11 +229,21 @@ async function renderPdf(code) {
     const objectUrl = URL.createObjectURL(blob);
 
     pdfFrame.innerHTML = "";
+    openPdfLink.href = objectUrl;
+
+    if (shouldOpenPdfNatively()) {
+      pdfFrame.innerHTML = '<div class="loader">Membuka PDF</div>';
+      setNotice(notice, "PDF dibuka dengan viewer bawaan browser agar semua halaman tampil.", "success");
+      window.setTimeout(() => {
+        window.location.assign(objectUrl);
+      }, 250);
+      return;
+    }
+
     const iframe = document.createElement("iframe");
     iframe.title = `PDF ${code}`;
     iframe.src = objectUrl;
     pdfFrame.append(iframe);
-    openPdfLink.href = objectUrl;
 
     if (source === "network") {
       setNotice(notice, "PDF dibuka dari server dan sudah siap untuk akses offline di browser ini.", "success");

@@ -1,4 +1,4 @@
-const APP_CACHE = "manual-sakte-app-v3";
+const APP_CACHE = "manual-sakte-app-v4";
 const PDF_CACHE = "manual-sakte-pdf-v3";
 
 const APP_ASSETS = [
