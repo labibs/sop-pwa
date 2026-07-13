@@ -24,8 +24,8 @@ export async function GET(request) {
     return Response.json({ message: "Parameter url atau code wajib diisi." }, { status: 400 });
   }
 
-  const svg = await QRCode.toString(target, {
-    type: "svg",
+  const png = await QRCode.toBuffer(target, {
+    type: "png",
     errorCorrectionLevel: "M",
     margin: 2,
     width: 1024,
@@ -35,10 +35,10 @@ export async function GET(request) {
     },
   });
 
-  return new Response(svg, {
+  return new Response(png, {
     headers: {
-      "Content-Type": "image/svg+xml; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filenameFor(code || "manual-sakte")}-barcode.svg"`,
+      "Content-Type": "image/png",
+      "Content-Disposition": `attachment; filename="${filenameFor(code || "manual-sakte")}-barcode.png"`,
       "Cache-Control": "no-store",
     },
   });
