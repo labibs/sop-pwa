@@ -37,6 +37,7 @@ const generatedResult = document.querySelector("#generatedResult");
 const generatedLink = document.querySelector("#generatedLink");
 const generatedPassword = document.querySelector("#generatedPassword");
 const copyGenerated = document.querySelector("#copyGenerated");
+const downloadGeneratedBarcode = document.querySelector("#downloadGeneratedBarcode");
 const adminNotice = document.querySelector("#adminNotice");
 const adminTableBody = document.querySelector("#adminTableBody");
 const adminEmptyState = document.querySelector("#adminEmptyState");
@@ -65,7 +66,15 @@ const currentCodeFromPath = () => {
 };
 
 const isAdminRoute = () => window.location.pathname.split("/").filter(Boolean)[0]?.toLowerCase() === "admin";
-const pdfApiUrlFor = (code, password) => `/api/pdf?code=${encodeURIComponent(code)}&password=${encodeURIComponent(password)}`;
+const pdfApiUrlFor = (code, credential) => {
+  const params = new URLSearchParams({ code });
+  if (credential?.token) {
+    params.set("t", credential.token);
+  } else {
+    params.set("password", credential?.password || "");
+  }
+  return `/api/pdf?${params.toString()}`;
+};
 const cacheKeyFor = (code) => `/offline-pdf/${encodeURIComponent(code)}.pdf`;
 
 function setStatus() {
@@ -155,16 +164,21 @@ async function waitForServiceWorker() {
   }
 }
 
-async function readPasswordFor(code) {
+async function readCredentialFor(code) {
   const params = new URLSearchParams(window.location.search);
+  const token = params.get("t") || params.get("token");
+  if (token) {
+    return { token };
+  }
+
   const fromUrl = params.get("p") || params.get("password");
   if (fromUrl) {
-    return fromUrl;
+    return { password: fromUrl };
   }
 
   const saved = sessionStorage.getItem(`doc-password:${code}`);
   if (saved) {
-    return saved;
+    return { password: saved };
   }
 
   passwordMessage.textContent = "";
@@ -181,15 +195,15 @@ async function readPasswordFor(code) {
       }
       passwordDialog.close();
       sessionStorage.setItem(`doc-password:${code}`, value);
-      resolve(value);
+      resolve({ password: value });
     };
   });
 }
 
-async function getPdfResponse(code, password) {
+async function getPdfResponse(code, credential) {
   if (navigator.onLine) {
     try {
-      const response = await fetch(pdfApiUrlFor(code, password), { cache: "no-store" });
+      const response = await fetch(pdfApiUrlFor(code, credential), { cache: "no-store" });
       if (!response.ok) {
         const payload = await readJsonSafely(response);
         throw new Error(payload?.message || `HTTP ${response.status}`);
@@ -221,13 +235,13 @@ async function renderPdf(code) {
 
   try {
     await waitForServiceWorker();
-    const password = await readPasswordFor(code);
-    const metadata = navigator.onLine ? await getDocumentMetadata(code, password) : null;
+    const credential = await readCredentialFor(code);
+    const metadata = navigator.onLine ? await getDocumentMetadata(code, credential) : null;
     if (metadata?.title) {
       documentTitle.textContent = metadata.title;
     }
 
-    const { response, source } = await getPdfResponse(code, password);
+    const { response, source } = await getPdfResponse(code, credential);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
 
@@ -255,8 +269,14 @@ async function renderPdf(code) {
   }
 }
 
-async function getDocumentMetadata(code, password) {
-  const response = await fetch(`/api/document?code=${encodeURIComponent(code)}&password=${encodeURIComponent(password)}`, {
+async function getDocumentMetadata(code, credential) {
+  const params = new URLSearchParams({ code });
+  if (credential?.token) {
+    params.set("t", credential.token);
+  } else {
+    params.set("password", credential?.password || "");
+  }
+  const response = await fetch(`/api/document?${params.toString()}`, {
     cache: "no-store",
   });
   if (!response.ok) {
@@ -336,6 +356,7 @@ async function renderAdminList() {
         <td>
           <div class="table-actions">
             <button type="button" data-action="copy" data-code="${escapeHtml(doc.code)}">Salin</button>
+            <button type="button" data-action="barcode" data-code="${escapeHtml(doc.code)}">Barcode</button>
             <button type="button" data-action="edit" data-code="${escapeHtml(doc.code)}" data-title="${escapeHtml(doc.title)}">Edit</button>
             <button type="button" data-action="delete" data-code="${escapeHtml(doc.code)}">Hapus</button>
           </div>
@@ -391,6 +412,27 @@ function documentUrl(code, password = "") {
     url.searchParams.set("p", password);
   }
   return url.toString();
+}
+
+function barcodeUrlForLink(link) {
+  return `/api/barcode?url=${encodeURIComponent(link)}`;
+}
+
+function barcodeUrlForCode(code) {
+  const params = new URLSearchParams({
+    code,
+    adminPassword: adminPassword.value.trim(),
+  });
+  return `/api/barcode?${params.toString()}`;
+}
+
+function downloadFile(url) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "";
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function formatDate(value) {
@@ -558,6 +600,13 @@ copyGenerated.addEventListener("click", async () => {
   }, 1400);
 });
 
+downloadGeneratedBarcode.addEventListener("click", () => {
+  if (!generatedLink.value) {
+    return;
+  }
+  downloadFile(barcodeUrlForLink(generatedLink.value));
+});
+
 adminTableBody.addEventListener("click", async (event) => {
   const button = event.target.closest("button");
   if (!button) {
@@ -571,6 +620,11 @@ adminTableBody.addEventListener("click", async (event) => {
     setTimeout(() => {
       button.textContent = "Salin";
     }, 1400);
+    return;
+  }
+
+  if (action === "barcode") {
+    downloadFile(barcodeUrlForCode(code));
     return;
   }
 

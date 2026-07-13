@@ -121,7 +121,10 @@ export default function Shell() {
                 <input id="generatedLink" type="text" readOnly />
                 <label htmlFor="generatedPassword">Password</label>
                 <input id="generatedPassword" type="text" readOnly />
-                <button type="button" id="copyGenerated">Salin</button>
+                <div className="viewer-actions">
+                  <button type="button" id="copyGenerated">Salin</button>
+                  <button type="button" className="ghost-button" id="downloadGeneratedBarcode">Download Barcode</button>
+                </div>
               </div>
 
               <div className="admin-table-wrap">

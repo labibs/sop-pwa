@@ -4,6 +4,7 @@ import {
   DOCUMENT_PREFIX,
   PDF_PREFIX,
   absoluteUrl,
+  createAccessToken,
   createPasswordHash,
   deleteDocument,
   getDocument,
@@ -118,6 +119,7 @@ async function saveDocument(request, isUpdate) {
       pdfUrl,
       pdfPathname,
       passwordHash: documentPassword ? createPasswordHash(documentPassword) : existing.passwordHash,
+      accessToken: existing?.accessToken || createAccessToken(),
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     };
@@ -126,9 +128,7 @@ async function saveDocument(request, isUpdate) {
 
     return json({
       ...publicDocument(doc),
-      url: documentPassword
-        ? absoluteUrl(request, `/${encodeURIComponent(code)}?p=${encodeURIComponent(documentPassword)}`)
-        : absoluteUrl(request, `/${encodeURIComponent(code)}`),
+      url: absoluteUrl(request, `/${encodeURIComponent(code)}?t=${encodeURIComponent(doc.accessToken)}`),
       password: documentPassword,
     }, isUpdate ? 200 : 201);
   } catch (error) {

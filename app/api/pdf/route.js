@@ -1,4 +1,4 @@
-import { getDocument, getPrivateBlob, json, verifyPassword } from "../../../lib/documents";
+import { getDocument, getPrivateBlob, json, verifyAccessToken, verifyPassword } from "../../../lib/documents";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,9 @@ export async function GET(request) {
     if (!doc) {
       return json({ message: "Dokumen tidak ditemukan." }, 404);
     }
-    if (!verifyPassword(url.searchParams.get("password") || "", doc.passwordHash)) {
+    const token = url.searchParams.get("token") || url.searchParams.get("t") || "";
+    const password = url.searchParams.get("password") || "";
+    if (!verifyAccessToken(token, doc) && !verifyPassword(password, doc.passwordHash)) {
       return json({ message: "Password dokumen salah." }, 401);
     }
 
