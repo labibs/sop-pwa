@@ -174,7 +174,7 @@ async function readCredentialFor(code) {
     return { password: saved };
   }
 
-  throw new Error("Link dokumen tidak valid. Scan QR terbaru dari admin.");
+  return {};
 }
 
 async function getPdfResponse(code, credential) {
