@@ -115,7 +115,6 @@ export default function Shell() {
                 <input id="generatedLink" type="text" readOnly />
                 <div className="viewer-actions">
                   <button type="button" id="copyGenerated">Salin</button>
-                  <button type="button" className="ghost-button" id="downloadGeneratedBarcode">Download Barcode</button>
                 </div>
               </div>
 

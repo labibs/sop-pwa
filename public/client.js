@@ -34,7 +34,6 @@ const editingCode = document.querySelector("#editingCode");
 const generatedResult = document.querySelector("#generatedResult");
 const generatedLink = document.querySelector("#generatedLink");
 const copyGenerated = document.querySelector("#copyGenerated");
-const downloadGeneratedBarcode = document.querySelector("#downloadGeneratedBarcode");
 const adminNotice = document.querySelector("#adminNotice");
 const adminTableBody = document.querySelector("#adminTableBody");
 const adminEmptyState = document.querySelector("#adminEmptyState");
@@ -581,20 +580,6 @@ copyGenerated.addEventListener("click", async () => {
   setTimeout(() => {
     copyGenerated.textContent = "Salin";
   }, 1400);
-});
-
-downloadGeneratedBarcode.addEventListener("click", async () => {
-  if (!generatedLink.value) {
-    return;
-  }
-  try {
-    downloadGeneratedBarcode.textContent = "Membuat...";
-    await downloadBarcode(barcodeUrlForLink(generatedLink.value), "manual-sakte-barcode.png");
-  } catch (error) {
-    setNotice(adminNotice, error.message || "Barcode gagal dibuat.", "error");
-  } finally {
-    downloadGeneratedBarcode.textContent = "Download Barcode";
-  }
 });
 
 adminTableBody.addEventListener("click", async (event) => {
