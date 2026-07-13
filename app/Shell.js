@@ -104,7 +104,7 @@ export default function Shell() {
 
               <label htmlFor="pdfFile">File PDF</label>
               <input id="pdfFile" name="pdfFile" type="file" accept="application/pdf" />
-              <p className="field-hint">Maksimal 20 MB per PDF.</p>
+              <p className="field-hint">Maksimal 4 MB per PDF.</p>
 
               <div className="viewer-actions">
                 <button type="submit" id="saveDocument">Simpan</button>

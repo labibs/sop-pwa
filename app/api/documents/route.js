@@ -19,8 +19,8 @@ import {
 
 export const runtime = "nodejs";
 
-const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-const MAX_UPLOAD_LABEL = "20 MB";
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_UPLOAD_LABEL = "4 MB";
 
 export async function GET(request) {
   try {
