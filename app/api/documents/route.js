@@ -89,10 +89,6 @@ async function saveDocument(request, isUpdate) {
     if (!code || !title) {
       return json({ message: "Judul dan kode dokumen wajib diisi." }, 400);
     }
-    if (!isUpdate && !documentPassword) {
-      return json({ message: "Password dokumen wajib diisi." }, 400);
-    }
-
     const existing = isUpdate ? await getDocument(code) : null;
     if (isUpdate && !existing) {
       return json({ message: "Dokumen tidak ditemukan." }, 404);
@@ -134,7 +130,7 @@ async function saveDocument(request, isUpdate) {
       title,
       pdfUrl,
       pdfPathname,
-      passwordHash: documentPassword ? createPasswordHash(documentPassword) : existing.passwordHash,
+      passwordHash: documentPassword ? createPasswordHash(documentPassword) : existing?.passwordHash,
       accessToken: existing?.accessToken || createAccessToken(),
       createdAt: existing?.createdAt || now,
       updatedAt: now,
@@ -145,7 +141,6 @@ async function saveDocument(request, isUpdate) {
     return json({
       ...publicDocument(doc),
       url: absoluteUrl(request, `/${encodeURIComponent(code)}?t=${encodeURIComponent(doc.accessToken)}`),
-      password: documentPassword,
     }, isUpdate ? 200 : 201);
   } catch (error) {
     console.error(error);

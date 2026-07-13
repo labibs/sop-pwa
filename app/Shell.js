@@ -96,12 +96,6 @@ export default function Shell() {
               <label htmlFor="pdfCode">Kode link</label>
               <input id="pdfCode" name="pdfCode" type="text" autoComplete="off" placeholder="BOR-001" />
 
-              <label htmlFor="pdfPassword">Password dokumen</label>
-              <div className="search-row">
-                <input id="pdfPassword" name="pdfPassword" type="text" autoComplete="off" placeholder="Otomatis jika kosong" />
-                <button type="button" id="generatePassword">Generate</button>
-              </div>
-
               <label htmlFor="pdfFile">File PDF</label>
               <input id="pdfFile" name="pdfFile" type="file" accept="application/pdf" />
               <p className="field-hint">Maksimal 4 MB per PDF.</p>
@@ -119,8 +113,6 @@ export default function Shell() {
                 <h2>Link siap dipakai</h2>
                 <label htmlFor="generatedLink">Link</label>
                 <input id="generatedLink" type="text" readOnly />
-                <label htmlFor="generatedPassword">Password</label>
-                <input id="generatedPassword" type="text" readOnly />
                 <div className="viewer-actions">
                   <button type="button" id="copyGenerated">Salin</button>
                   <button type="button" className="ghost-button" id="downloadGeneratedBarcode">Download Barcode</button>
@@ -145,16 +137,6 @@ export default function Shell() {
           </div>
         </section>
       </main>
-
-      <dialog className="password-dialog" id="passwordDialog">
-        <form id="passwordForm" method="dialog">
-          <h2>Password dokumen</h2>
-          <p>Masukkan password untuk membuka PDF ini.</p>
-          <input id="documentPassword" type="password" autoComplete="current-password" required />
-          <p className="form-error" id="passwordMessage" />
-          <button type="submit">Buka Dokumen</button>
-        </form>
-      </dialog>
 
       <Script src="/client.js" strategy="afterInteractive" />
     </>

@@ -25,9 +25,7 @@ const adminDashboard = document.querySelector("#adminDashboard");
 const adminPassword = document.querySelector("#adminPassword");
 const pdfTitle = document.querySelector("#pdfTitle");
 const pdfCode = document.querySelector("#pdfCode");
-const pdfPassword = document.querySelector("#pdfPassword");
 const pdfFile = document.querySelector("#pdfFile");
-const generatePassword = document.querySelector("#generatePassword");
 const newDocument = document.querySelector("#newDocument");
 const adminLogout = document.querySelector("#adminLogout");
 const cancelEdit = document.querySelector("#cancelEdit");
@@ -35,17 +33,12 @@ const saveDocument = document.querySelector("#saveDocument");
 const editingCode = document.querySelector("#editingCode");
 const generatedResult = document.querySelector("#generatedResult");
 const generatedLink = document.querySelector("#generatedLink");
-const generatedPassword = document.querySelector("#generatedPassword");
 const copyGenerated = document.querySelector("#copyGenerated");
 const downloadGeneratedBarcode = document.querySelector("#downloadGeneratedBarcode");
 const adminNotice = document.querySelector("#adminNotice");
 const adminTableBody = document.querySelector("#adminTableBody");
 const adminEmptyState = document.querySelector("#adminEmptyState");
 const adminLink = document.querySelector("#adminLink");
-const passwordDialog = document.querySelector("#passwordDialog");
-const passwordForm = document.querySelector("#passwordForm");
-const documentPassword = document.querySelector("#documentPassword");
-const passwordMessage = document.querySelector("#passwordMessage");
 
 const normalizeCode = (value) =>
   value
@@ -181,23 +174,7 @@ async function readCredentialFor(code) {
     return { password: saved };
   }
 
-  passwordMessage.textContent = "";
-  documentPassword.value = "";
-  passwordDialog.showModal();
-
-  return new Promise((resolve) => {
-    passwordForm.onsubmit = (event) => {
-      event.preventDefault();
-      const value = documentPassword.value.trim();
-      if (!value) {
-        passwordMessage.textContent = "Password wajib diisi.";
-        return;
-      }
-      passwordDialog.close();
-      sessionStorage.setItem(`doc-password:${code}`, value);
-      resolve({ password: value });
-    };
-  });
+  throw new Error("Link dokumen tidak valid. Scan QR terbaru dari admin.");
 }
 
 async function getPdfResponse(code, credential) {
@@ -322,12 +299,6 @@ function renderRecentDocuments() {
   }
 }
 
-function randomPassword() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
-}
-
 async function renderAdminList() {
   const password = adminPassword.value.trim();
   adminTableBody.innerHTML = "";
@@ -376,7 +347,6 @@ function resetAdminForm() {
   pdfCode.disabled = false;
   pdfTitle.value = "";
   pdfCode.value = "";
-  pdfPassword.value = "";
   pdfFile.value = "";
   saveDocument.textContent = "Simpan";
   setNotice(adminNotice, "");
@@ -399,11 +369,10 @@ function openEditForm(code, title) {
   pdfCode.value = code;
   pdfCode.disabled = true;
   pdfTitle.value = title;
-  pdfPassword.value = "";
   pdfFile.value = "";
   pdfFile.required = false;
   saveDocument.textContent = "Update Dokumen";
-  setNotice(adminNotice, "Kosongkan password jika tidak ingin mengganti password dokumen.");
+  setNotice(adminNotice, "Kosongkan file jika tidak ingin mengganti PDF.");
 }
 
 function documentUrl(code, password = "") {
@@ -478,10 +447,6 @@ documentForm.addEventListener("submit", (event) => {
   }
 });
 
-generatePassword.addEventListener("click", () => {
-  pdfPassword.value = randomPassword();
-});
-
 adminLoginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = adminLoginPassword.value.trim();
@@ -521,7 +486,6 @@ adminForm.addEventListener("submit", async (event) => {
   const password = adminPassword.value.trim();
   const title = pdfTitle.value.trim();
   const code = isEditing ? editingCode.value : normalizeCode(pdfCode.value || title);
-  const documentPasswordValue = pdfPassword.value.trim() || (isEditing ? "" : randomPassword());
 
   if (!isEditing && (!file || file.type !== "application/pdf")) {
     setNotice(adminNotice, "Pilih file PDF yang valid.", "error");
@@ -543,9 +507,6 @@ adminForm.addEventListener("submit", async (event) => {
     formData.append("adminPassword", password);
     formData.append("title", title);
     formData.append("code", code);
-    if (documentPasswordValue) {
-      formData.append("documentPassword", documentPasswordValue);
-    }
     if (file) {
       formData.append("pdf", file);
     }
@@ -562,7 +523,6 @@ adminForm.addEventListener("submit", async (event) => {
     sessionStorage.setItem(ADMIN_SESSION_KEY, password);
     if (payload.url) {
       generatedLink.value = payload.url;
-      generatedPassword.value = payload.password || "";
       generatedResult.hidden = false;
     }
     adminForm.hidden = true;
@@ -570,7 +530,6 @@ adminForm.addEventListener("submit", async (event) => {
     pdfCode.disabled = false;
     pdfTitle.value = "";
     pdfCode.value = "";
-    pdfPassword.value = "";
     pdfFile.value = "";
     setNotice(adminNotice, isEditing ? "Dokumen berhasil diupdate." : "Dokumen berhasil dibuat.", "success");
     renderAdminList();
@@ -601,8 +560,7 @@ pdfFile.addEventListener("change", () => {
 });
 
 copyGenerated.addEventListener("click", async () => {
-  const text = `Link: ${generatedLink.value}\nPassword: ${generatedPassword.value}`;
-  await navigator.clipboard.writeText(text);
+  await navigator.clipboard.writeText(generatedLink.value);
   copyGenerated.textContent = "Tersalin";
   setTimeout(() => {
     copyGenerated.textContent = "Salin";

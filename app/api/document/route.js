@@ -12,7 +12,7 @@ export async function GET(request) {
     const token = url.searchParams.get("token") || url.searchParams.get("t") || "";
     const password = url.searchParams.get("password") || "";
     if (!verifyAccessToken(token, doc) && !verifyPassword(password, doc.passwordHash)) {
-      return json({ message: "Password dokumen salah." }, 401);
+      return json({ message: "Link dokumen tidak valid. Gunakan QR terbaru dari admin." }, 401);
     }
     return json(publicDocument(doc));
   } catch (error) {

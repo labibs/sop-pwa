@@ -223,8 +223,7 @@ input {
 
 input[type="password"],
 input[readonly],
-#generatedLink,
-#generatedPassword {
+#generatedLink {
   text-transform: none;
 }
 
