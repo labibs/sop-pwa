@@ -2,6 +2,8 @@ const APP_CACHE = "manual-sakte-app-v3";
 const PDF_CACHE = "manual-sakte-pdf-v3";
 const RECENT_KEY = "manual-sakte-recent";
 const ADMIN_SESSION_KEY = "manual-sakte-admin-password";
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+const MAX_UPLOAD_LABEL = "20 MB";
 
 const lookupView = document.querySelector("#lookupView");
 const viewerView = document.querySelector("#viewerView");
@@ -406,6 +408,17 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function isPdfTooLarge(file) {
+  return file && file.size > MAX_UPLOAD_BYTES;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) {
+    return "0 MB";
+  }
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 documentForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const code = normalizeCode(documentCode.value);
@@ -469,6 +482,11 @@ adminForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (isPdfTooLarge(file)) {
+    setNotice(adminNotice, `Ukuran PDF ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`, "error");
+    return;
+  }
+
   try {
     const formData = new FormData();
     formData.append("adminPassword", password);
@@ -508,6 +526,27 @@ adminForm.addEventListener("submit", async (event) => {
   } catch (error) {
     setNotice(adminNotice, error.message || "Simpan gagal.", "error");
   }
+});
+
+pdfFile.addEventListener("change", () => {
+  const file = pdfFile.files[0];
+  if (!file) {
+    return;
+  }
+
+  if (file.type !== "application/pdf") {
+    setNotice(adminNotice, "File harus berformat PDF.", "error");
+    pdfFile.value = "";
+    return;
+  }
+
+  if (isPdfTooLarge(file)) {
+    setNotice(adminNotice, `Ukuran PDF ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`, "error");
+    pdfFile.value = "";
+    return;
+  }
+
+  setNotice(adminNotice, `File siap diupload: ${file.name} (${formatFileSize(file.size)}).`, "success");
 });
 
 copyGenerated.addEventListener("click", async () => {

@@ -528,6 +528,13 @@ button,
   font-weight: 800;
 }
 
+.field-hint {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 @media (max-width: 760px) {
   .topbar {
     align-items: flex-start;

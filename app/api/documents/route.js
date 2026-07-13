@@ -19,6 +19,9 @@ import {
 
 export const runtime = "nodejs";
 
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+const MAX_UPLOAD_LABEL = "20 MB";
+
 export async function GET(request) {
   try {
     const url = new URL(request.url);
@@ -84,6 +87,9 @@ async function saveDocument(request, isUpdate) {
     }
     if (hasFile && file.type !== "application/pdf") {
       return json({ message: "File harus berformat PDF." }, 400);
+    }
+    if (hasFile && file.size > MAX_UPLOAD_BYTES) {
+      return json({ message: `Ukuran PDF maksimal ${MAX_UPLOAD_LABEL}.` }, 413);
     }
 
     const now = new Date().toISOString();
