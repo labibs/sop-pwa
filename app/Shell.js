@@ -55,6 +55,7 @@ export default function Shell() {
           </div>
 
           <div className="notice" id="notice" hidden />
+          <div className="file-list" id="documentFileList" hidden />
           <div className="pdf-frame" id="pdfFrame">
             <div className="loader" id="loader">Menyiapkan PDF</div>
           </div>
@@ -92,6 +93,9 @@ export default function Shell() {
 
               <label htmlFor="pdfTitle">Judul dokumen</label>
               <input id="pdfTitle" name="pdfTitle" type="text" autoComplete="off" placeholder="Boarding Manual BOR 001" required />
+
+              <label htmlFor="pdfFileTitle">Judul file PDF</label>
+              <input id="pdfFileTitle" name="pdfFileTitle" type="text" autoComplete="off" placeholder="Bagian 1" />
 
               <label htmlFor="pdfCode">Kode link</label>
               <input id="pdfCode" name="pdfCode" type="text" autoComplete="off" placeholder="BOR-001" />

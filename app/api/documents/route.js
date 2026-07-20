@@ -83,13 +83,14 @@ async function saveDocument(request, isUpdate) {
 
     const code = normalizeCode(formData.get("code") || formData.get("title"));
     const title = String(formData.get("title") || "").trim();
+    const fileTitle = String(formData.get("fileTitle") || "").trim();
     const documentPassword = String(formData.get("documentPassword") || "").trim();
     const file = formData.get("pdf");
 
     if (!code || !title) {
       return json({ message: "Judul dan kode dokumen wajib diisi." }, 400);
     }
-    const existing = isUpdate ? await getDocument(code) : null;
+    const existing = await getDocument(code);
     if (isUpdate && !existing) {
       return json({ message: "Dokumen tidak ditemukan." }, 404);
     }
@@ -108,10 +109,24 @@ async function saveDocument(request, isUpdate) {
     const now = new Date().toISOString();
     let pdfUrl = existing?.pdfUrl || "";
     let pdfPathname = existing?.pdfPathname || "";
+    const existingFiles = Array.isArray(existing?.files)
+      ? existing.files
+      : existing?.pdfPathname
+        ? [{
+            id: "default",
+            title: existing.title,
+            filename: `${existing.code}.pdf`,
+            pdfUrl: existing.pdfUrl,
+            pdfPathname: existing.pdfPathname,
+            uploadedAt: existing.createdAt,
+          }]
+        : [];
+    let files = existingFiles;
 
     if (hasFile) {
       const safeFilename = String(file.name || `${code}.pdf`).replace(/[^a-zA-Z0-9._-]/g, "-");
-      const targetPathname = `${PDF_PREFIX}${code}-${crypto.randomUUID()}-${safeFilename}`;
+      const fileId = crypto.randomUUID();
+      const targetPathname = `${PDF_PREFIX}${code}-${fileId}-${safeFilename}`;
       const pdfBlob = await put(targetPathname, file, {
         access: "private",
         contentType: "application/pdf",
@@ -119,10 +134,18 @@ async function saveDocument(request, isUpdate) {
       });
       pdfUrl = pdfBlob.url;
       pdfPathname = pdfBlob.pathname;
-
-      if (existing?.pdfPathname) {
-        await del(existing.pdfPathname, { token: getBlobToken() });
-      }
+      files = [
+        ...existingFiles,
+        {
+          id: fileId,
+          title: fileTitle || title,
+          filename: safeFilename,
+          size: file.size,
+          pdfUrl,
+          pdfPathname,
+          uploadedAt: now,
+        },
+      ];
     }
 
     const doc = {
@@ -130,6 +153,7 @@ async function saveDocument(request, isUpdate) {
       title,
       pdfUrl,
       pdfPathname,
+      files,
       passwordHash: documentPassword ? createPasswordHash(documentPassword) : existing?.passwordHash,
       accessToken: existing?.accessToken || createAccessToken(),
       createdAt: existing?.createdAt || now,

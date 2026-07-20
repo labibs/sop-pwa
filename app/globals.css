@@ -481,6 +481,20 @@ button,
   box-shadow: var(--shadow);
 }
 
+.file-list {
+  display: grid;
+  gap: 10px;
+}
+
+.file-list button {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--accent-dark);
+}
+
 .pdf-frame iframe,
 .pdf-frame object {
   display: block;

@@ -12,6 +12,7 @@ const documentForm = document.querySelector("#documentForm");
 const documentCode = document.querySelector("#documentCode");
 const documentTitle = document.querySelector("#documentTitle");
 const pdfFrame = document.querySelector("#pdfFrame");
+const documentFileList = document.querySelector("#documentFileList");
 const notice = document.querySelector("#notice");
 const openPdfLink = document.querySelector("#openPdfLink");
 const networkStatus = document.querySelector("#networkStatus");
@@ -24,6 +25,7 @@ const adminLoginNotice = document.querySelector("#adminLoginNotice");
 const adminDashboard = document.querySelector("#adminDashboard");
 const adminPassword = document.querySelector("#adminPassword");
 const pdfTitle = document.querySelector("#pdfTitle");
+const pdfFileTitle = document.querySelector("#pdfFileTitle");
 const pdfCode = document.querySelector("#pdfCode");
 const pdfFile = document.querySelector("#pdfFile");
 const newDocument = document.querySelector("#newDocument");
@@ -58,8 +60,12 @@ const currentCodeFromPath = () => {
 };
 
 const isAdminRoute = () => window.location.pathname.split("/").filter(Boolean)[0]?.toLowerCase() === "admin";
-const pdfApiUrlFor = (code, credential) => {
+const metadataKeyFor = (code) => `manual-sakte-metadata:${code}`;
+const pdfApiUrlFor = (code, credential, fileId = "") => {
   const params = new URLSearchParams({ code });
+  if (fileId) {
+    params.set("file", fileId);
+  }
   if (credential?.token) {
     params.set("t", credential.token);
   } else {
@@ -67,7 +73,7 @@ const pdfApiUrlFor = (code, credential) => {
   }
   return `/api/pdf?${params.toString()}`;
 };
-const cacheKeyFor = (code) => `/offline-pdf/${encodeURIComponent(code)}.pdf`;
+const cacheKeyFor = (code, fileId = "default") => `/offline-pdf/${encodeURIComponent(code)}/${encodeURIComponent(fileId || "default")}.pdf`;
 
 function setStatus() {
   const online = navigator.onLine;
@@ -103,6 +109,8 @@ function showViewer(code) {
   hideAllViews();
   viewerView.hidden = false;
   documentTitle.textContent = code;
+  documentFileList.hidden = true;
+  documentFileList.innerHTML = "";
   openPdfLink.removeAttribute("href");
 }
 
@@ -132,15 +140,15 @@ function showAdminDashboard() {
   renderAdminList();
 }
 
-async function cachePdf(code, response) {
+async function cachePdf(code, fileId, response) {
   const cache = await caches.open(PDF_CACHE);
-  await cache.put(cacheKeyFor(code), response.clone());
+  await cache.put(cacheKeyFor(code, fileId), response.clone());
   await cacheDocumentShell(code);
 }
 
-async function getCachedPdf(code) {
+async function getCachedPdf(code, fileId) {
   const cache = await caches.open(PDF_CACHE);
-  return cache.match(cacheKeyFor(code));
+  return cache.match(cacheKeyFor(code, fileId));
 }
 
 async function cacheDocumentShell(code) {
@@ -182,19 +190,19 @@ async function readCredentialFor(code) {
   return {};
 }
 
-async function getPdfResponse(code, credential) {
+async function getPdfResponse(code, credential, fileId = "default") {
   if (navigator.onLine) {
     try {
-      const response = await fetch(pdfApiUrlFor(code, credential), { cache: "no-store" });
+      const response = await fetch(pdfApiUrlFor(code, credential, fileId), { cache: "no-store" });
       if (!response.ok) {
         const payload = await readJsonSafely(response);
         throw new Error(payload?.message || `HTTP ${response.status}`);
       }
-      await cachePdf(code, response.clone());
+      await cachePdf(code, fileId, response.clone());
       rememberDocument(code);
       return { response, source: "network" };
     } catch (error) {
-      const cached = await getCachedPdf(code);
+      const cached = await getCachedPdf(code, fileId);
       if (cached) {
         return { response: cached, source: "cache-after-network-error" };
       }
@@ -202,7 +210,7 @@ async function getPdfResponse(code, credential) {
     }
   }
 
-  const cached = await getCachedPdf(code);
+  const cached = await getCachedPdf(code, fileId);
   if (cached) {
     return { response: cached, source: "cache" };
   }
@@ -218,12 +226,60 @@ async function renderPdf(code) {
   try {
     await waitForServiceWorker();
     const credential = await readCredentialFor(code);
-    const metadata = navigator.onLine ? await getDocumentMetadata(code, credential) : null;
+    const metadata = navigator.onLine ? await getDocumentMetadata(code, credential) : readStoredMetadata(code);
     if (metadata?.title) {
       documentTitle.textContent = metadata.title;
     }
 
-    const { response, source } = await getPdfResponse(code, credential);
+    const files = Array.isArray(metadata?.files) && metadata.files.length > 0
+      ? metadata.files
+      : [{ id: "default", title: metadata?.title || code, filename: `${code}.pdf` }];
+
+    if (files.length > 1) {
+      renderDocumentFiles(code, credential, files);
+      pdfFrame.innerHTML = '<div class="loader">Pilih file PDF</div>';
+      setNotice(notice, "Pilih salah satu file PDF dari QR ini.", "success");
+      return;
+    }
+
+    await openPdfFile(code, credential, files[0]);
+  } catch (error) {
+    pdfFrame.innerHTML = '<div class="loader">PDF tidak dapat ditampilkan</div>';
+    setNotice(
+      notice,
+      navigator.onLine
+        ? error.message || `PDF ${code} tidak ditemukan atau password salah.`
+        : `PDF ${code} belum pernah dibuka online, sehingga belum ada versi offline.`,
+      "error",
+    );
+  }
+}
+
+function renderDocumentFiles(code, credential, files) {
+  documentFileList.hidden = false;
+  documentFileList.innerHTML = "";
+
+  for (const file of files) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.innerHTML = `<span>${escapeHtml(file.title || file.filename || "PDF")}</span><small>${formatFileSize(file.size || 0)}</small>`;
+    button.addEventListener("click", () => {
+      openPdfFile(code, credential, file);
+    });
+    documentFileList.append(button);
+  }
+}
+
+async function openPdfFile(code, credential, file) {
+  documentFileList.querySelectorAll("button").forEach((button) => {
+    button.disabled = true;
+  });
+  pdfFrame.innerHTML = '<div class="loader">Menyiapkan PDF</div>';
+  setNotice(notice, "");
+
+  try {
+    const fileId = file?.id || "default";
+    const { response, source } = await getPdfResponse(code, credential, fileId);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
 
@@ -251,13 +307,11 @@ async function renderPdf(code) {
     }
   } catch (error) {
     pdfFrame.innerHTML = '<div class="loader">PDF tidak dapat ditampilkan</div>';
-    setNotice(
-      notice,
-      navigator.onLine
-        ? error.message || `PDF ${code} tidak ditemukan atau password salah.`
-        : `PDF ${code} belum pernah dibuka online, sehingga belum ada versi offline.`,
-      "error",
-    );
+    setNotice(notice, error.message || "PDF tidak dapat dibuka.", "error");
+  } finally {
+    documentFileList.querySelectorAll("button").forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 
@@ -275,7 +329,17 @@ async function getDocumentMetadata(code, credential) {
     const payload = await readJsonSafely(response);
     throw new Error(payload?.message || "Dokumen tidak dapat dibuka.");
   }
-  return response.json();
+  const metadata = await response.json();
+  localStorage.setItem(metadataKeyFor(code), JSON.stringify(metadata));
+  return metadata;
+}
+
+function readStoredMetadata(code) {
+  try {
+    return JSON.parse(localStorage.getItem(metadataKeyFor(code)) || "null");
+  } catch {
+    return null;
+  }
 }
 
 async function readJsonSafely(response) {
@@ -337,7 +401,7 @@ async function renderAdminList() {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><strong>${escapeHtml(doc.title)}</strong></td>
-        <td>${escapeHtml(doc.code)}</td>
+        <td>${escapeHtml(doc.code)}<br><small>${doc.fileCount || 0} file</small></td>
         <td>${formatDate(doc.createdAt)}</td>
         <td>
           <div class="table-actions">
@@ -361,6 +425,7 @@ function resetAdminForm() {
   editingCode.value = "";
   pdfCode.disabled = false;
   pdfTitle.value = "";
+  pdfFileTitle.value = "";
   pdfCode.value = "";
   pdfFile.value = "";
   saveDocument.textContent = "Simpan";
@@ -384,6 +449,7 @@ function openEditForm(code, title) {
   pdfCode.value = code;
   pdfCode.disabled = true;
   pdfTitle.value = title;
+  pdfFileTitle.value = "";
   pdfFile.value = "";
   pdfFile.required = false;
   saveDocument.textContent = "Update Dokumen";
@@ -521,6 +587,7 @@ adminForm.addEventListener("submit", async (event) => {
     const formData = new FormData();
     formData.append("adminPassword", password);
     formData.append("title", title);
+    formData.append("fileTitle", pdfFileTitle.value.trim());
     formData.append("code", code);
     if (file) {
       formData.append("pdf", file);
@@ -544,6 +611,7 @@ adminForm.addEventListener("submit", async (event) => {
     editingCode.value = "";
     pdfCode.disabled = false;
     pdfTitle.value = "";
+    pdfFileTitle.value = "";
     pdfCode.value = "";
     pdfFile.value = "";
     setNotice(adminNotice, isEditing ? "Dokumen berhasil diupdate." : "Dokumen berhasil dibuat.", "success");
