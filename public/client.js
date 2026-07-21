@@ -25,9 +25,9 @@ const adminLoginNotice = document.querySelector("#adminLoginNotice");
 const adminDashboard = document.querySelector("#adminDashboard");
 const adminPassword = document.querySelector("#adminPassword");
 const pdfTitle = document.querySelector("#pdfTitle");
-const pdfFileTitle = document.querySelector("#pdfFileTitle");
 const pdfCode = document.querySelector("#pdfCode");
-const pdfFile = document.querySelector("#pdfFile");
+const pdfFileItems = document.querySelector("#pdfFileItems");
+const addPdfFileItem = document.querySelector("#addPdfFileItem");
 const newDocument = document.querySelector("#newDocument");
 const adminLogout = document.querySelector("#adminLogout");
 const cancelEdit = document.querySelector("#cancelEdit");
@@ -425,9 +425,8 @@ function resetAdminForm() {
   editingCode.value = "";
   pdfCode.disabled = false;
   pdfTitle.value = "";
-  pdfFileTitle.value = "";
   pdfCode.value = "";
-  pdfFile.value = "";
+  resetFileItems();
   saveDocument.textContent = "Simpan";
   setNotice(adminNotice, "");
 }
@@ -437,7 +436,7 @@ function openCreateForm() {
   generatedResult.hidden = true;
   editingCode.value = "";
   pdfCode.disabled = false;
-  pdfFile.required = true;
+  resetFileItems();
   saveDocument.textContent = "Upload & Buat Link";
   setNotice(adminNotice, "");
 }
@@ -449,11 +448,91 @@ function openEditForm(code, title) {
   pdfCode.value = code;
   pdfCode.disabled = true;
   pdfTitle.value = title;
-  pdfFileTitle.value = "";
-  pdfFile.value = "";
-  pdfFile.required = false;
-  saveDocument.textContent = "Update Dokumen";
-  setNotice(adminNotice, "Kosongkan file jika tidak ingin mengganti PDF.");
+  resetFileItems();
+  saveDocument.textContent = "Simpan / Tambah File";
+  setNotice(adminNotice, "Tambahkan file baru bila ingin menambah pilihan PDF di QR yang sama.");
+}
+
+function fileRows() {
+  return Array.from(pdfFileItems.querySelectorAll("[data-file-item]"));
+}
+
+function updateFileRowLabels() {
+  const rows = fileRows();
+  rows.forEach((row, index) => {
+    row.querySelector(".file-item-header strong").textContent = `PDF ${index + 1}`;
+    row.querySelector("[data-action='remove-file']").hidden = rows.length === 1;
+  });
+}
+
+function setFileRowStatus(row, message, kind = "info") {
+  const status = row.querySelector("[data-file-status]");
+  status.textContent = message;
+  status.dataset.kind = kind;
+}
+
+function createFileRow() {
+  const row = document.createElement("div");
+  row.className = "file-item";
+  row.dataset.fileItem = "";
+  row.innerHTML = `
+    <div class="file-item-header">
+      <strong>PDF</strong>
+      <button type="button" class="file-item-remove" data-action="remove-file">Hapus</button>
+    </div>
+    <label>Judul file PDF</label>
+    <input class="pdf-file-title" type="text" autocomplete="off" placeholder="Bagian ${fileRows().length + 1}">
+    <label>File PDF</label>
+    <input class="pdf-file-input" type="file" accept="application/pdf">
+    <p class="field-hint">Maksimal ${MAX_UPLOAD_LABEL} per PDF.</p>
+    <p class="file-item-status" data-file-status></p>
+  `;
+  return row;
+}
+
+function resetFileItems() {
+  pdfFileItems.innerHTML = "";
+  pdfFileItems.append(createFileRow());
+  updateFileRowLabels();
+}
+
+function getUploadItems({ isEditing }) {
+  const items = [];
+
+  for (const row of fileRows()) {
+    const titleInput = row.querySelector(".pdf-file-title");
+    const fileInput = row.querySelector(".pdf-file-input");
+    const file = fileInput.files[0];
+    setFileRowStatus(row, "");
+
+    if (!file && titleInput.value.trim()) {
+      throw new Error("Pilih file PDF untuk setiap judul file yang diisi.");
+    }
+
+    if (!file) {
+      continue;
+    }
+
+    if (file.type !== "application/pdf") {
+      throw new Error(`${file.name} harus berformat PDF.`);
+    }
+
+    if (isPdfTooLarge(file)) {
+      throw new Error(`${file.name} berukuran ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`);
+    }
+
+    items.push({
+      row,
+      title: titleInput.value.trim(),
+      file,
+    });
+  }
+
+  if (!isEditing && items.length === 0) {
+    throw new Error("Tambahkan minimal satu file PDF.");
+  }
+
+  return items;
 }
 
 function documentUrl(code, password = "") {
@@ -560,50 +639,76 @@ adminLogout.addEventListener("click", () => {
 adminForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const isEditing = Boolean(editingCode.value);
-  setNotice(adminNotice, isEditing ? "Mengupdate dokumen..." : "Mengunggah PDF dan membuat link...");
   generatedResult.hidden = true;
 
-  const file = pdfFile.files[0];
   const password = adminPassword.value.trim();
   const title = pdfTitle.value.trim();
   const code = isEditing ? editingCode.value : normalizeCode(pdfCode.value || title);
 
-  if (!isEditing && (!file || file.type !== "application/pdf")) {
-    setNotice(adminNotice, "Pilih file PDF yang valid.", "error");
+  if (!title || !code) {
+    setNotice(adminNotice, "Judul dokumen dan kode link wajib diisi.", "error");
     return;
   }
 
-  if (file && file.type !== "application/pdf") {
-    setNotice(adminNotice, "File pengganti harus berformat PDF.", "error");
+  let uploadItems = [];
+  try {
+    uploadItems = getUploadItems({ isEditing });
+  } catch (error) {
+    setNotice(adminNotice, error.message || "Periksa file PDF.", "error");
     return;
   }
 
-  if (isPdfTooLarge(file)) {
-    setNotice(adminNotice, `Ukuran PDF ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`, "error");
-    return;
-  }
+  setNotice(
+    adminNotice,
+    uploadItems.length > 0
+      ? `Mengunggah 1/${uploadItems.length} PDF di background...`
+      : "Mengupdate judul dokumen...",
+  );
 
   try {
-    const formData = new FormData();
-    formData.append("adminPassword", password);
-    formData.append("title", title);
-    formData.append("fileTitle", pdfFileTitle.value.trim());
-    formData.append("code", code);
-    if (file) {
-      formData.append("pdf", file);
+    let payload = null;
+
+    if (uploadItems.length === 0) {
+      const formData = new FormData();
+      formData.append("adminPassword", password);
+      formData.append("title", title);
+      formData.append("code", code);
+
+      const response = await fetch("/api/documents", {
+        method: "PUT",
+        body: formData,
+      });
+      payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Update gagal.");
+      }
     }
 
-    const response = await fetch("/api/documents", {
-      method: isEditing ? "PUT" : "POST",
-      body: formData,
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.message || "Upload gagal.");
+    for (let index = 0; index < uploadItems.length; index += 1) {
+      const item = uploadItems[index];
+      setNotice(adminNotice, `Mengunggah ${index + 1}/${uploadItems.length}: ${item.file.name}`);
+      setFileRowStatus(item.row, "Mengunggah...", "info");
+
+      const formData = new FormData();
+      formData.append("adminPassword", password);
+      formData.append("title", title);
+      formData.append("fileTitle", item.title);
+      formData.append("code", code);
+      formData.append("pdf", item.file);
+
+      const response = await fetch("/api/documents", {
+        method: isEditing || index > 0 ? "PUT" : "POST",
+        body: formData,
+      });
+      payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Upload gagal.");
+      }
+      setFileRowStatus(item.row, "Selesai diupload.", "success");
     }
 
     sessionStorage.setItem(ADMIN_SESSION_KEY, password);
-    if (payload.url) {
+    if (payload?.url) {
       generatedLink.value = payload.url;
       generatedResult.hidden = false;
     }
@@ -611,35 +716,64 @@ adminForm.addEventListener("submit", async (event) => {
     editingCode.value = "";
     pdfCode.disabled = false;
     pdfTitle.value = "";
-    pdfFileTitle.value = "";
     pdfCode.value = "";
-    pdfFile.value = "";
-    setNotice(adminNotice, isEditing ? "Dokumen berhasil diupdate." : "Dokumen berhasil dibuat.", "success");
+    resetFileItems();
+    setNotice(
+      adminNotice,
+      uploadItems.length > 1
+        ? `${uploadItems.length} PDF berhasil ditambahkan ke satu QR.`
+        : isEditing
+          ? "Dokumen berhasil diupdate."
+          : "Dokumen berhasil dibuat.",
+      "success",
+    );
     renderAdminList();
   } catch (error) {
     setNotice(adminNotice, error.message || "Simpan gagal.", "error");
   }
 });
 
-pdfFile.addEventListener("change", () => {
-  const file = pdfFile.files[0];
+addPdfFileItem.addEventListener("click", () => {
+  pdfFileItems.append(createFileRow());
+  updateFileRowLabels();
+});
+
+pdfFileItems.addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button || button.dataset.action !== "remove-file") {
+    return;
+  }
+
+  button.closest("[data-file-item]").remove();
+  updateFileRowLabels();
+});
+
+pdfFileItems.addEventListener("change", (event) => {
+  const input = event.target.closest(".pdf-file-input");
+  if (!input) {
+    return;
+  }
+
+  const row = input.closest("[data-file-item]");
+  const file = input.files[0];
   if (!file) {
+    setFileRowStatus(row, "");
     return;
   }
 
   if (file.type !== "application/pdf") {
-    setNotice(adminNotice, "File harus berformat PDF.", "error");
-    pdfFile.value = "";
+    setFileRowStatus(row, "File harus berformat PDF.", "error");
+    input.value = "";
     return;
   }
 
   if (isPdfTooLarge(file)) {
-    setNotice(adminNotice, `Ukuran PDF ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`, "error");
-    pdfFile.value = "";
+    setFileRowStatus(row, `Ukuran ${formatFileSize(file.size)}. Maksimal ${MAX_UPLOAD_LABEL}.`, "error");
+    input.value = "";
     return;
   }
 
-  setNotice(adminNotice, `File siap diupload: ${file.name} (${formatFileSize(file.size)}).`, "success");
+  setFileRowStatus(row, `Siap diupload: ${file.name} (${formatFileSize(file.size)}).`, "success");
 });
 
 copyGenerated.addEventListener("click", async () => {

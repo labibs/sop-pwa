@@ -94,15 +94,33 @@ export default function Shell() {
               <label htmlFor="pdfTitle">Judul dokumen</label>
               <input id="pdfTitle" name="pdfTitle" type="text" autoComplete="off" placeholder="Boarding Manual BOR 001" required />
 
-              <label htmlFor="pdfFileTitle">Judul file PDF</label>
-              <input id="pdfFileTitle" name="pdfFileTitle" type="text" autoComplete="off" placeholder="Bagian 1" />
-
               <label htmlFor="pdfCode">Kode link</label>
               <input id="pdfCode" name="pdfCode" type="text" autoComplete="off" placeholder="BOR-001" />
 
-              <label htmlFor="pdfFile">File PDF</label>
-              <input id="pdfFile" name="pdfFile" type="file" accept="application/pdf" />
-              <p className="field-hint">Maksimal 4 MB per PDF.</p>
+              <div className="file-items-head">
+                <div>
+                  <h3>File dalam QR ini</h3>
+                  <p>Upload satu per satu di background. Maksimal 4 MB per PDF.</p>
+                </div>
+                <button type="button" className="ghost-button" id="addPdfFileItem">Tambah File</button>
+              </div>
+
+              <div className="file-items" id="pdfFileItems">
+                <div className="file-item" data-file-item>
+                  <div className="file-item-header">
+                    <strong>PDF 1</strong>
+                    <button type="button" className="file-item-remove" data-action="remove-file" hidden>Hapus</button>
+                  </div>
+
+                  <label>Judul file PDF</label>
+                  <input className="pdf-file-title" type="text" autoComplete="off" placeholder="Bagian 1" />
+
+                  <label>File PDF</label>
+                  <input className="pdf-file-input" type="file" accept="application/pdf" />
+                  <p className="field-hint">Maksimal 4 MB per PDF.</p>
+                  <p className="file-item-status" data-file-status></p>
+                </div>
+              </div>
 
               <div className="viewer-actions">
                 <button type="submit" id="saveDocument">Simpan</button>
