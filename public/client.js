@@ -28,6 +28,7 @@ const pdfTitle = document.querySelector("#pdfTitle");
 const pdfCode = document.querySelector("#pdfCode");
 const pdfFileItems = document.querySelector("#pdfFileItems");
 const addPdfFileItem = document.querySelector("#addPdfFileItem");
+const fileItemCount = document.querySelector("#fileItemCount");
 const newDocument = document.querySelector("#newDocument");
 const adminLogout = document.querySelector("#adminLogout");
 const cancelEdit = document.querySelector("#cancelEdit");
@@ -460,9 +461,10 @@ function fileRows() {
 function updateFileRowLabels() {
   const rows = fileRows();
   rows.forEach((row, index) => {
-    row.querySelector(".file-item-header strong").textContent = `PDF ${index + 1}`;
+    row.querySelector(".file-item-header strong").textContent = `Dokumen #${index + 1}`;
     row.querySelector("[data-action='remove-file']").hidden = rows.length === 1;
   });
+  fileItemCount.textContent = `${rows.length} item`;
 }
 
 function setFileRowStatus(row, message, kind = "info") {
@@ -480,8 +482,8 @@ function createFileRow() {
       <strong>PDF</strong>
       <button type="button" class="file-item-remove" data-action="remove-file">Hapus</button>
     </div>
-    <label>Judul file PDF</label>
-    <input class="pdf-file-title" type="text" autocomplete="off" placeholder="Bagian ${fileRows().length + 1}">
+    <label>Judul Dokumen</label>
+    <input class="pdf-file-title" type="text" autocomplete="off" placeholder="Contoh: Bagian ${fileRows().length + 1}">
     <label>File PDF</label>
     <input class="pdf-file-input" type="file" accept="application/pdf">
     <p class="field-hint">Maksimal ${MAX_UPLOAD_LABEL} per PDF.</p>
